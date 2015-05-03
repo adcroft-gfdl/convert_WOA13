@@ -50,12 +50,6 @@ all: $(BGC) $(TS)
 #       This means that a dependency will be created if missing but a target will
 #       not get re-made if the dependency is updated.
 
-# Rule to install files
-$(FINAL_DIR)/%.nc:
-	@mkdir -p $(@D)
-	make $(call fn_final2work,$*)
-	ln $(call fn_final2work,$*) $@
-#
 # Rule to create derived files (potential temperature)
 $(WORK_DIR)/annual/woa13_%_ptemp_annual_$(RESOLUTION).nc $(WORK_DIR)/seasonal/woa13_%_ptemp_seasonal_$(RESOLUTION).nc $(WORK_DIR)/monthly/woa13_%_ptemp_monthly_$(RESOLUTION).nc: work/pkg/lib/seawater
 	@mkdir -p $(@D)
@@ -90,6 +84,12 @@ $(WORK_DIR)/netcdf3/%.nc:
 $(RAW_DIR)/%.nc:
 	@mkdir -p $(@D)
 	cd $(@D); wget $(ROOT_URL)/$(call fn_variable_name,$(call fn_raw_vchar,$*))/netcdf/$(subst $(RAW_DIR)/,,$@); touch --date='2013-09-01' $(@F)
+
+# Rule to install files
+$(FINAL_DIR)/%.nc:
+	@mkdir -p $(@D)
+	make $(call fn_final2work,$*)
+	ln $(call fn_final2work,$*) $@
 
 # Checksums
 check: check.raw check.final
