@@ -1,15 +1,12 @@
 # convert_WOA13
 
-This package is provided on an "as is" basis and the user assumes
-responsibility for its use.  This is **NOT** part of the NOAA-NODC World Ocean
-Atlas products.
+This package is provided on an "as is" basis and the user assumes responsibility for its use.  This is **NOT** part of the NOAA-NODC World Ocean Atlas products.
 
 ## Purpose
 
-1. Download all the 1-degree ocean climatological data in a directory;
-1. Calculate the potential temperature in a consistent format for each time-period
-and analysis frequency;
-1. Install the above data in a convenient format (e.g. monthly data in one file);
+1. Download all the [World Ocean Atlas (2013)](https://www.nodc.noaa.gov/OC5/woa13/) 1-degree climatological ocean data;
+1. Calculate potential temperature for each time-period and analysis frequency;
+1. Install the above data in a convenient format (e.g. monthly data in one file) in a local directory;
 1. Document and record the above process for the purpose of reproducibility in the future.
 
 ## Usage
@@ -27,7 +24,7 @@ Basic usage:
 If you get an error from `ncks`, check you are using a new version of NCO (see requisites below)
 
 Make specific targets:
-- `make woa13_1975-1984_ptemp_seasonal_01.nc` - will calculate potential-temperature each climatological season of the '75-'84 period in the WOA13 dataset, downloading any raw files as needed.
+- `make woa13_1975-1984_ptemp_seasonal_01.nc` - will calculate potential-temperature each of the four climatological seasons for the 1975-1984 period in the WOA13 dataset, downloading any raw files as needed.
 
 ## What it does
 
@@ -45,4 +42,4 @@ After everything has been downloaded, calculated and installed, it is safe to re
 
 - An internet connection
 - python 2.7+, wget, nco 4.3+ (netcdf operators)
-- 44Gb of space for the raw data, 100Gb for the work space and 59Gb for the final data. This would add up to over 200Gb of space BUT we use hard-links where possible the total footprint before cleanup is about 141Gb and after removing the *work/* directory the footprint of raw + final data is about 102Gb.
+- 44Gb of space for the raw data, 100Gb for the work space and 59Gb for the final data. This would add up to over 200Gb of space BUT we use hard-links where possible so that the total footprint before cleanup is about 141Gb. After removing the *work/* directory the combined footprint of raw and final data is about 102Gb.
