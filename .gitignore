@@ -1,0 +1,6 @@
+# Ignore raw data
+raw
+# Ignore final data
+woa13*.nc
+# Ignore work space
+work
