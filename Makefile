@@ -14,6 +14,17 @@ SW = seawater-3.3.2
 GSW = gsw-3.0.3
 PYTHON_PACKAGES = $(WORK_DIR)/pkg
 
+# All original file names for the "all" period
+RAW_ALL = $(foreach v,o O A i n p,$(foreach m,00 $(MONTHS) $(SEASONS),woa13_all_$(v)$(m)_01.nc))
+# All original file names for the decadal averages
+RAW_DECS = $(foreach d,$(TPERIODS),$(foreach v,t s,$(foreach m,00 $(MONTHS) $(SEASONS),woa13_$(call fn_years2code,$(d))_$(v)$(m)_01.nc)))
+# All intermediate file names for the "all" period
+INT_ALL = $(foreach v,o O A i n p,$(foreach m,$(FREQS),woa13_all_$(v)_$(m)_01.nc))
+# All intermediate file names for the decadal averages
+INT_DECS = $(foreach d,$(TPERIODS),$(foreach v,t s,$(foreach m,$(FREQS),woa13_$(call fn_years2code,$(d))_$(v)_$(m)_01.nc)))
+# All annual ptemp file names for the decadal averages
+INT_PTMP = $(foreach d,$(TPERIODS),$(foreach m,annual,woa13_$(call fn_years2code,$(d))_ptemp_$(m)_01.nc))
+
 # fn_variable_name(variable character)
 fn_variable_name = $(if $(subst t,,$(1)),,temperature)$(if $(subst s,,$(1)),,salinity)$(if $(subst o,,$(1)),,oxygen)$(if $(subst O,,$(1)),,o2sat)$(if $(subst A,,$(1)),,AOU)$(if $(subst i,,$(1)),,silicate)$(if $(subst p,,$(1)),,phosphate)$(if $(subst n,,$(1)),,nitrate)
 # fn_combined_stem(decade, variable, period)
@@ -44,52 +55,64 @@ fn_final2work = $(WORK_DIR)/$(call fn_final_freq,$(1))/$(call fn_combined_stem,$
 
 BGC = $(foreach freq,$(FREQS),$(foreach var,o O A i p n,$(FINAL_DIR)/woa13_all_$(var)_$(freq)_$(RESOLUTION).nc))
 TS = $(foreach tper,$(TPERIODS),$(foreach freq,$(FREQS),$(foreach var,t s ptemp,$(FINAL_DIR)/woa13_$(tper)_$(var)_$(freq)_$(RESOLUTION).nc)))
-all: $(BGC) $(TS)
+all: seawater $(BGC) $(TS)
 
-# NOTE: The following rules have no dependencies because of filename translations.
-#       This means that a dependency will be created if missing but a target will
-#       not get re-made if the dependency is updated.
+# Rule to install files
+define install-final
+$(FINAL_DIR)/$1: $(call fn_final2work,$1)
+	echo $(call fn_final2work,$1)
+	@mkdir -p $$(@D)
+	ln -f $$^ $$@
+endef
+$(foreach f,$(BGC) $(TS),$(eval $(call install-final,$f)))
 
 # Rule to create derived files (potential temperature)
-$(WORK_DIR)/annual/woa13_%_ptemp_annual_$(RESOLUTION).nc $(WORK_DIR)/seasonal/woa13_%_ptemp_seasonal_$(RESOLUTION).nc $(WORK_DIR)/monthly/woa13_%_ptemp_monthly_$(RESOLUTION).nc: work/pkg/lib/seawater
-	@mkdir -p $(@D)
-	make $(@D)/$(call fn_combined_stem,$(call fn_raw_decade,$(@F)),t,$(call fn_final_freq,$(@F))) $(@D)/$(call fn_combined_stem,$(call fn_raw_decade,$(@F)),s,$(call fn_final_freq,$(@F)))
-	export PYTHONPATH=$(PYTHON_PACKAGES)/lib ; ./temp2ptemp.py $(@D)/$(call fn_combined_stem,$(call fn_raw_decade,$(@F)),t,$(call fn_final_freq,$(@F))) $(@D)/$(call fn_combined_stem,$(call fn_raw_decade,$(@F)),s,$(call fn_final_freq,$(@F))) $@
+define calc-ptemp
+$(WORK_DIR)/annual/woa13_$1_ptemp_annual_$(RESOLUTION).nc:: $(foreach ts,t s,$(WORK_DIR)/annual/woa13_$1_$(ts)_annual_$(RESOLUTION).nc)
+	export PYTHONPATH=$(PYTHON_PACKAGES)/lib ; ./temp2ptemp.py $$^ $$@
+$(WORK_DIR)/seasonal/woa13_$1_ptemp_seasonal_$(RESOLUTION).nc:: $(foreach ts,t s,$(WORK_DIR)/seasonal/woa13_$1_$(ts)_seasonal_$(RESOLUTION).nc)
+	export PYTHONPATH=$(PYTHON_PACKAGES)/lib ; ./temp2ptemp.py $$^ $$@
+$(WORK_DIR)/monthly/woa13_$1_ptemp_monthly_$(RESOLUTION).nc:: $(foreach ts,t s,$(WORK_DIR)/monthly/woa13_$1_$(ts)_monthly_$(RESOLUTION).nc)
+	export PYTHONPATH=$(PYTHON_PACKAGES)/lib ; ./temp2ptemp.py $$^ $$@
+endef
+$(foreach f,$(INT_PTMP),$(eval $(call calc-ptemp,$(call fn_raw_decade,$f))))
 
 # Rule to create annual files
-$(WORK_DIR)/annual/woa13_%.nc:
-	@mkdir -p $(@D)
-	make $(WORK_DIR)/netcdf3/$(call fn_raw_stem,$(call fn_raw_decade,woa13_$*),$(call fn_raw_vchar,woa13_$*),00)
-	ln $(WORK_DIR)/netcdf3/$(call fn_raw_stem,$(call fn_raw_decade,woa13_$*),$(call fn_raw_vchar,woa13_$*),00) $@
+define link-annual
+$(WORK_DIR)/annual/$1: $(WORK_DIR)/netcdf3/$(call fn_raw_stem,$(call fn_raw_decade,$1),$(call fn_raw_vchar,$1),00)
+	@mkdir -p $$(@D)
+	ln -f $$^ $$@
+endef
+$(foreach f,$(INT_ALL) $(INT_DECS),$(eval $(call link-annual,$f)))
 
 # Rule to create seasonal files
-$(WORK_DIR)/seasonal/woa13_%.nc:
-	@mkdir -p $(@D)
-	make $(foreach mon,$(SEASONS),$(WORK_DIR)/netcdf3/$(call fn_raw_stem,$(call fn_raw_decade,woa13_$*),$(call fn_raw_vchar,woa13_$*),$(mon)))
-	ncrcat --history $(foreach mon,$(SEASONS),$(WORK_DIR)/netcdf3/$(call fn_raw_stem,$(call fn_raw_decade,woa13_$*),$(call fn_raw_vchar,woa13_$*),$(mon))) $@
+define combine-seasonal
+$(WORK_DIR)/seasonal/$1: $(foreach mon,$(SEASONS),$(WORK_DIR)/netcdf3/$(call fn_raw_stem,$(call fn_raw_decade,$1),$(call fn_raw_vchar,$1),$(mon)))
+	@mkdir -p $$(@D)
+	ncrcat --history $$^ $$@
+endef
+$(foreach f,$(INT_ALL) $(INT_DECS),$(eval $(call combine-seasonal,$f)))
 
 # Rule to create monthly files
-$(WORK_DIR)/monthly/woa13_%.nc:
-	@mkdir -p $(@D)
-	make $(foreach mon,$(MONTHS),$(WORK_DIR)/netcdf3/$(call fn_raw_stem,$(call fn_raw_decade,woa13_$*),$(call fn_raw_vchar,woa13_$*),$(mon)))
-	ncrcat --history $(foreach mon,$(MONTHS),$(WORK_DIR)/netcdf3/$(call fn_raw_stem,$(call fn_raw_decade,woa13_$*),$(call fn_raw_vchar,woa13_$*),$(mon))) $@
+define combine-monthly
+$(WORK_DIR)/monthly/$1: $(foreach mon,$(MONTHS),$(WORK_DIR)/netcdf3/$(call fn_raw_stem,$(call fn_raw_decade,$1),$(call fn_raw_vchar,$1),$(mon)))
+	@mkdir -p $$(@D)
+	ncrcat --history $$^ $$@
+endef
+$(foreach f,$(INT_ALL) $(INT_DECS),$(eval $(call combine-monthly,$f)))
 
-# Rule to create netcdf3 64-bit version of corresponding raw file with tiem converted to a record dimension
-$(WORK_DIR)/netcdf3/%.nc:
-	@mkdir -p $(@D)
-	make $(call fn_stem2raw_path,$*)
-	ncks --64 --mk_rec_dmn time --history $(call fn_stem2raw_path,$*) $@
+# Rule to create netcdf3 64-bit version of corresponding raw file with time converted to a record dimension
+define netcdf3
+$(WORK_DIR)/netcdf3/$1: $(call fn_stem2raw_path,$1)
+	@mkdir -p $$(@D)
+	ncks --64 --mk_rec_dmn time --history $$^ $$@
+endef
+$(foreach f,$(RAW_ALL) $(RAW_DECS),$(eval $(call netcdf3,$f)))
 
 # Rule to download raw netcdf file
 $(RAW_DIR)/%.nc:
 	@mkdir -p $(@D)
 	cd $(@D); wget $(ROOT_URL)/$(call fn_variable_name,$(call fn_raw_vchar,$*))/netcdf/$(subst $(RAW_DIR)/,,$@); touch --date='2013-09-01' $(@F)
-
-# Rule to install files
-$(FINAL_DIR)/%.nc:
-	@mkdir -p $(@D)
-	make $(call fn_final2work,$*)
-	ln $(call fn_final2work,$*) $@
 
 # Checksums
 check: check.raw check.final
@@ -103,6 +126,7 @@ md5sums.final:
 # Non-WOA13 stuff
 
 # Rule to obtain seawater python package (EOS-80)
+seawater: $(PYTHON_PACKAGES)/lib/seawater
 $(PYTHON_PACKAGES)/lib/seawater: $(PYTHON_PACKAGES)/$(SW)
 	(cd $< ; python setup.py build -b ../)
 $(PYTHON_PACKAGES)/seawater-%: $(PYTHON_PACKAGES)/seawater-%.tar.gz
