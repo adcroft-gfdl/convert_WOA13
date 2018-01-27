@@ -1,0 +1,27 @@
+name: woa13
+channels:
+- defaults
+- conda-forge
+- ioos
+- scitools
+dependencies:
+- seawater=3.3.4=py27_0
+- certifi=2016.2.28=py27_0
+- curl=7.49.0=1
+- hdf4=4.2.12=1
+- hdf5=1.8.17=2
+- jpeg=9b=0
+- libnetcdf=4.4.1=1
+- mkl=2017.0.3=0
+- netcdf4=1.2.4=np113py27_0
+- numpy=1.13.1=py27_0
+- openssl=1.0.2l=0
+- pip=9.0.1=py27_1
+- python=2.7.13=0
+- readline=6.2=2
+- setuptools=36.4.0=py27_1
+- sqlite=3.13.0=0
+- tk=8.5.18=0
+- wheel=0.29.0=py27_0
+- zlib=1.2.11=0
+
