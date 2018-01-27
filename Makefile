@@ -4,7 +4,7 @@ RAW_DIR = raw
 RAW_VERSION = 1.00
 RESOLUTION = 01
 WORK_DIR = work
-ROOT_URL = http://data.nodc.noaa.gov/thredds/fileServer/woa/WOA13/DATA
+ROOT_URL = http://data.nodc.noaa.gov/thredds/fileServer/woa/WOA13/DATAv2
 MONTHS = 01 02 03 04 05 06 07 08 09 10 11 12
 SEASONS = 13 14 15 16
 FREQS = annual seasonal monthly
@@ -108,6 +108,13 @@ $(WORK_DIR)/netcdf3/$1: $(call fn_stem2raw_path,$1)
 	ncks --64 --mk_rec_dmn time --history $$^ $$@
 endef
 $(foreach f,$(RAW_ALL) $(RAW_DECS),$(eval $(call netcdf3,$f)))
+
+# Map T/S v2 filename in raw to same filename used in v1 (i.e. without the v2 attached)
+define map_TSv2
+$(RAW_DIR)/$(call fn_raw_decade,$1)/$(RAW_VERSION)/$1: $(subst .nc,v2.nc,$(RAW_DIR)/$(call fn_raw_decade,$1)/$(RAW_VERSION)/$1)
+	cd $$(@D); ln -s $$(^F) $$(@F)
+endef
+$(foreach f,$(RAW_DECS),$(eval $(call map_TSv2,$f)))
 
 # Rule to download raw netcdf file
 $(RAW_DIR)/%.nc:
