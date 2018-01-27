@@ -9,6 +9,13 @@ This package is provided on an "as is" basis and the user assumes responsibility
 1. Install the above data in a convenient format (e.g. monthly data in one file) in a local directory;
 1. Document and record the above process for the purpose of reproducibility in the future.
 
+## Versions of data
+
+NODC released a version 2 in 2015 (https://data.nodc.noaa.gov/woa/WOA13/DOC/woa13v2_changes.pdf).
+- To download version 1 of the data use the branch "v1".
+- Branch "v2" will download version 2 of the data.
+- The "master" branch defaults to the latest version.
+
 ## Usage
 
 To install all the data in the directory *directory*, 
