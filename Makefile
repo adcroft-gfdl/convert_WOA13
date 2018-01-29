@@ -89,7 +89,7 @@ $(foreach f,$(INT_ALL) $(INT_DECS),$(eval $(call link-annual,$f)))
 define combine-seasonal
 $(WORK_DIR)/seasonal/$1: $(foreach mon,$(SEASONS),$(WORK_DIR)/netcdf3/$(call fn_raw_stem,$(call fn_raw_decade,$1),$(call fn_raw_vchar,$1),$(mon)))
 	@mkdir -p $$(@D)
-	ncrcat --history $$^ $$@
+	ncrcat -O --history $$^ $$@
 endef
 $(foreach f,$(INT_ALL) $(INT_DECS),$(eval $(call combine-seasonal,$f)))
 
@@ -97,7 +97,7 @@ $(foreach f,$(INT_ALL) $(INT_DECS),$(eval $(call combine-seasonal,$f)))
 define combine-monthly
 $(WORK_DIR)/monthly/$1: $(foreach mon,$(MONTHS),$(WORK_DIR)/netcdf3/$(call fn_raw_stem,$(call fn_raw_decade,$1),$(call fn_raw_vchar,$1),$(mon)))
 	@mkdir -p $$(@D)
-	ncrcat --history $$^ $$@
+	ncrcat -O --history $$^ $$@
 endef
 $(foreach f,$(INT_ALL) $(INT_DECS),$(eval $(call combine-monthly,$f)))
 
@@ -105,14 +105,14 @@ $(foreach f,$(INT_ALL) $(INT_DECS),$(eval $(call combine-monthly,$f)))
 define netcdf3
 $(WORK_DIR)/netcdf3/$1: $(call fn_stem2raw_path,$1)
 	@mkdir -p $$(@D)
-	ncks --64 --mk_rec_dmn time --history $$^ $$@
+	ncks -O --64 --mk_rec_dmn time --history $$^ $$@
 endef
 $(foreach f,$(RAW_ALL) $(RAW_DECS),$(eval $(call netcdf3,$f)))
 
 # Map T/S v2 filename in raw to same filename used in v1 (i.e. without the v2 attached)
 define map_TSv2
 $(RAW_DIR)/$(call fn_raw_decade,$1)/$(RAW_VERSION)/$1: $(subst .nc,v2.nc,$(RAW_DIR)/$(call fn_raw_decade,$1)/$(RAW_VERSION)/$1)
-	cd $$(@D); ln -s $$(^F) $$(@F)
+	cd $$(@D); ln -sf $$(^F) $$(@F)
 endef
 $(foreach f,$(RAW_DECS),$(eval $(call map_TSv2,$f)))
 
