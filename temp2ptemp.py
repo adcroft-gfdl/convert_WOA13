@@ -88,22 +88,26 @@ def writeNetcdf(tFile, sFile, outFile):
           # Calculate potential temperature
           temp = tf.variables[v][n]
           saln = sf.variables[sv][n]
+          lat = sf.variables['lat'][:]
           ptemp = numpy.zeros(temp.shape)
           if ptemp.shape[0] != len(depth): raise Exception('Number of levels is inconsistent')
           for k in range(depth.shape[0]):
             T = temp[k]  # In-situ temperature (deg C)
             Sp = saln[k] # Practical salinity (psu)
             # Using depth in meters as pressure in dbars seems to be a common approximation
-            ptemp[k] = seawater.eos80.ptmp(Sp, T, depth[k])
+            #ptemp[k] = seawater.eos80.ptmp(Sp, T, depth[k])
+            #rg.variables[pv][n].comment = 'Pressure used for potential temp. conversion based depth approximation'
             # This is a test of sensitivity to the above approximation: rms differences
             # of order 1.8e-3 degC.
-            # ptemp[k] = seawater.eos80.ptmp(Sp, T, depth[k]*9.81*1035./1.e4)
+            #ptemp[k] = seawater.eos80.ptmp(Sp, T, depth[k]*9.81*1035./1.e4)
+            #rg.variables[pv][n].comment = 'Pressure used for potential temp. conversion based on Rho0 = 1035.'
             # The following is the EOS80 way and has an rms difference with the ptmp(S,T,z)
             # approximation of 1.3e-3
-            # p = seawater.eos80.pres( depth[k], lat )
-            # ptemp[k] = seawater.eos80.ptmp(Sp, T, (p.T + 0.*Sp.T).T)
+            p = seawater.eos80.pres( depth[k], lat )
+            ptemp[k] = seawater.eos80.ptmp(Sp, T, (p.T + 0.*Sp.T).T)
+            rg.variables[pv].comment = 'Pressure used for potential temp. conversion based on EOS-80 (seawater-3.3.2)'
           rg.variables[pv][n] = ptemp
-
+          
   rg.close()
 
 # Invoke parseCommandLine(), the top-level prodedure
