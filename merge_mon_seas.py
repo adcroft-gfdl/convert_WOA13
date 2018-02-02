@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 import netCDF4 as nc
 import numpy as np
@@ -5,7 +7,7 @@ import os
 
 def arguments():
     description = '''
-      Creates CORE run initial condition files by merging
+      Creates full depth monthly mean files by merging
       monthly mean fields above 1500 m and seasonal mean 
       fields below 1500 m.
       '''
@@ -13,7 +15,7 @@ def arguments():
                formatter_class=argparse.RawTextHelpFormatter)
     #-- Output file
     parser.add_argument('-o', '--outfile', type=str, default=None,
-                        help='Output file. Default is woa13_CORE_IC_+varname+.nc')
+                        help='Output file. Default is woa13_decav_+varname+_monthly_full_depth.nc')
     parser.add_argument('-F','--force',action='store_true',default=False, 
                         help='Clobber existing output file if it exists.')
     parser.add_argument('-v','--varname', type=str, default=None, 
@@ -37,7 +39,7 @@ def merge_woa(args):
     field = f_seas[var]
     # Initialize output netcdf file
     if args.outfile is None:
-        outfile = 'woa13_CORE_IC_'+var+'.nc'
+        outfile = 'woa13_decav_'+var+'_monthly_full_depth.nc'
     else:
         outfile = args.outfile
     if os.path.exists(outfile):
