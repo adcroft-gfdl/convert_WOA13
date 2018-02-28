@@ -15,7 +15,7 @@ def arguments():
                formatter_class=argparse.RawTextHelpFormatter)
     #-- Output file
     parser.add_argument('-o', '--outfile', type=str, default=None,
-                        help='Output file. Default is woa13_decav_+varname+_monthly_full_depth.nc')
+                        help='Output file. Default is woa13_decav_+varname+_monthly_fulldepth.nc')
     parser.add_argument('-F','--force',action='store_true',default=False, 
                         help='Clobber existing output file if it exists.')
     parser.add_argument('-v','--varname', type=str, default=None, 
@@ -28,18 +28,17 @@ def merge_woa(args):
     # Open source data files
     f_mon = nc.Dataset(args.monthlyfile[0])
     f_seas = nc.Dataset(args.seasonalfile[0])
-    var = args.varname
-    mon = f_mon[var][:]
-    seas = f_seas[var][:,57::]
-    seas = np.ma.repeat(seas,3,axis=0)
-    # Concatenate monthly average fields in the upper 1500 m
-    # and seasonal average fields below 1500 m
-    data = np.ma.concatenate((mon,seas),axis=1)
-    # Grab source field for metadata purposes
-    field = f_seas[var]
+    if args.varname is None:
+        varlist = []
+        for v in f_mon.variables.keys():
+            for s in ['_an','_ma','_mn','_oa','_sd','_se']:
+                if v.endswith(s): varlist.append(v)
+    else:
+        varlist = [args.varname]
+
     # Initialize output netcdf file
     if args.outfile is None:
-        outfile = 'woa13_decav_'+var+'_monthly_full_depth.nc'
+        outfile = 'woa13_decav_'+varlist[0].split('_')[0]+'_monthly_fulldepth.nc'
     else:
         outfile = args.outfile
     if os.path.exists(outfile):
@@ -63,6 +62,7 @@ def merge_woa(args):
     # Create bounds dimension
     nbounds =  dataset.createDimension('nbounds', 2)
     # Copy required dimensions from source netcdf file
+    field = f_seas[varlist[0]]
     for d in field.dimensions[1::]:
         dimension = f_seas[d]
         dim = dataset.createDimension(d, len(dimension))
@@ -81,13 +81,21 @@ def merge_woa(args):
         dims.setncatts(atts)
         dims[:] = dimension[:]
     # Write out merged field
-    outvar = dataset.createVariable(var, np.float32, field.dimensions)
-    atts = field.__dict__
-    outvar.setncatts(atts)
-    outvar.long_name = 'WOA13 seasonal potential temperature climatology merged '+\
-                       'with WOA13 monthly potential temperature climatolgoy in '+\
-                       'the upper 1500 m'
-    outvar[:] = data[:]
+    for var in varlist:
+        mon = f_mon[var][:]
+        seas = f_seas[var][:,57::]
+        seas = np.ma.repeat(seas,3,axis=0)
+        # Concatenate monthly average fields in the upper 1500 m
+        # and seasonal average fields below 1500 m
+        data = np.ma.concatenate((mon,seas),axis=1)
+        # Grab source field for metadata purposes
+        field = f_seas[var]
+        outvar = dataset.createVariable(var, np.float32, field.dimensions)
+        atts = field.__dict__
+        outvar.setncatts(atts)
+        outvar.long_name = outvar.long_name+' (seasonal field merged '+\
+                       'with monthly field in the upper 1500 m)'
+        outvar[:] = data[:]
     # Close dataset
     dataset.close()
 

@@ -24,6 +24,8 @@ INT_ALL = $(foreach v,o O A i n p,$(foreach m,$(FREQS),woa13_all_$(v)_$(m)_01.nc
 INT_DECS = $(foreach d,$(TPERIODS),$(foreach v,t s,$(foreach m,$(FREQS),woa13_$(call fn_years2code,$(d))_$(v)_$(m)_01.nc)))
 # All annual ptemp file names for the decadal averages
 INT_PTMP = $(foreach d,$(TPERIODS),$(foreach m,annual,woa13_$(call fn_years2code,$(d))_ptemp_$(m)_01.nc))
+# Combined monthly (above 1500m) and seasonal (below 1500m) fields
+MERGED_FIELDS = $(foreach tper,$(TPERIODS),$(foreach v,ptemp s,$(FINAL_DIR)/woa13_$(tper)_$(v)_monthly_fulldepth_01.nc))
 
 # fn_variable_name(variable character)
 fn_variable_name = $(if $(subst t,,$(1)),,temperature)$(if $(subst s,,$(1)),,salinity)$(if $(subst o,,$(1)),,oxygen)$(if $(subst O,,$(1)),,o2sat)$(if $(subst A,,$(1)),,AOU)$(if $(subst i,,$(1)),,silicate)$(if $(subst p,,$(1)),,phosphate)$(if $(subst n,,$(1)),,nitrate)
@@ -55,7 +57,11 @@ fn_final2work = $(WORK_DIR)/$(call fn_final_freq,$(1))/$(call fn_combined_stem,$
 
 BGC = $(foreach freq,$(FREQS),$(foreach var,o O A i p n,$(FINAL_DIR)/woa13_all_$(var)_$(freq)_$(RESOLUTION).nc))
 TS = $(foreach tper,$(TPERIODS),$(foreach freq,$(FREQS),$(foreach var,t s ptemp,$(FINAL_DIR)/woa13_$(tper)_$(var)_$(freq)_$(RESOLUTION).nc)))
-all: seawater $(BGC) $(TS)
+all: seawater $(BGC) $(TS) $(MERGED_FIELDS)
+
+# Rule to build a fulldepth monthly file
+%_monthly_fulldepth_$(RESOLUTION).nc: %_monthly_$(RESOLUTION).nc %_seasonal_$(RESOLUTION).nc
+	merge_mon_seas.py -o $@ $(subst monthly_fulldepth,monthly,$@) $(subst monthly_fulldepth,seasonal,$@)
 
 # Rule to install files
 define install-final
