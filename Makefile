@@ -61,7 +61,7 @@ all: seawater $(BGC) $(TS) $(MERGED_FIELDS)
 
 # Rule to build a fulldepth monthly file
 %_monthly_fulldepth_$(RESOLUTION).nc: %_monthly_$(RESOLUTION).nc %_seasonal_$(RESOLUTION).nc
-	merge_mon_seas.py -o $@ $(subst monthly_fulldepth,monthly,$@) $(subst monthly_fulldepth,seasonal,$@)
+	export PYTHONPATH=$(PYTHON_PACKAGES)/lib ; ./merge_mon_seas.py -o $@ $(subst monthly_fulldepth,monthly,$@) $(subst monthly_fulldepth,seasonal,$@)
 
 # Rule to install files
 define install-final
